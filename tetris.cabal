@@ -66,7 +66,8 @@ executable tetris
 
     -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.17.2.1,
-		      gloss >= 1.13.2.2
+		      gloss >= 1.13.2.2,
+   		      random
 
     -- Directories containing source files.
     hs-source-dirs:   app
