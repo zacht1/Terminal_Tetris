@@ -95,16 +95,12 @@ rotatePiece state = state { currPiece = (currPiece state) { shape = (transpose .
 dropPiece :: GameState -> GameState
 dropPiece state = generateNewPiece state { currPiece = (currPiece state) { positionY = 0 } }
 
-validMove :: Direction -> Int -> Int -> [[Bool]] -> Bool
-validMove dir x y grid =
-   case dir of
-      MoveEast  -> x + pieceWidth <= gridWidth
-      MoveWest  -> x >= 0
-      MoveSouth -> y >= 0
-      None      -> True
-   where
-      pieceWidth = length (head grid)
-      gridWidth = length (head grid)
+validMove :: Direction -> Piece -> [[Bool]] -> Int -> Int -> Bool
+validMove dir piece grid x y = 
+all (\(newX, newY) -> withinBounds (newX, newY) && not (occupied grid (newX, newY))) $ occupiedCells (movePiece dir piece (x, y))
+
+--  takes two integer arguments representing the x and y coordinates to be checked and returns a boolean value
+withinBounds (x, y) = x >= 0 && x < width && y >= 0 && y < height
 
 newPosition :: Direction -> GameState -> (Int, Int)
 newPosition dir state = 
@@ -116,12 +112,15 @@ newPosition dir state =
       MoveSouth -> (x, y - 1)
       None      -> (x, y)
 
+{- updated to pass the current state to validMove & only update the positionX and positionY of the current 
+piece in currPiece if the move is valid according to the updated validMove function.-}
 movePiece :: Direction -> GameState -> GameState
 movePiece dir state =
-   if validMove dir newX newY
-   then state { currPiece = (currPiece state) { positionX = newX, positionY = newY } }
-   else state
-   where (newX, newY) = newPosition dir state
+  let (newX, newY) = newPosition dir state
+  in if validMove dir (currPiece state) (grid state) newX newY
+     then state { currPiece = (currPiece state) { positionX = newX, positionY = newY } }
+     else state
+
 
 occupiedCells :: Piece -> [(Int, Int)]
 occupiedCells piece = [(x + (positionX piece), y + (positionY piece)) | 
@@ -141,13 +140,14 @@ generateNewPiece state = state { grid = newGrid, currPiece = newPiece, seed = ne
 replace2D :: Int -> Int -> a -> [[a]] -> [[a]]
 replace2D x y newElem xs =
     take y xs ++ [take x (xs !! y) ++ [newElem] ++ drop (x + 1) (xs !! y)] ++ drop (y + 1) xs
-    
+
+{- updated to pass the current state (including currPiece and grid) to the validMove function when checking for a valid south move. -}
 update :: Float -> GameState -> GameState
 update dt state =
-   if validMove MoveSouth (positionX (currPiece state)) (positionY (currPiece state) - 1)
-   then if (tick state) >= 1.0
-        then movePiece MoveSouth state { tick = 0 }
-        else state { tick = (tick state) + dt }
-   else if (tick state) >= 1.0 then generateNewPiece state { tick = 0 } else state { tick = (tick state) + dt }
+  if validMove MoveSouth (currPiece state) (grid state) (positionX (currPiece state)) (positionY (currPiece state) - 1)
+    then if (tick state) >= 1.0
+         then movePiece MoveSouth state { tick = 0 }
+         else state { tick = (tick state) + dt }
+    else if (tick state) >= 1.0 then generateNewPiece state { tick = 0 } else state { tick = (tick state) + dt }
 
 
