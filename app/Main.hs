@@ -95,14 +95,16 @@ rotatePiece state = state { currPiece = (currPiece state) { shape = (transpose .
 dropPiece :: GameState -> GameState
 dropPiece state = generateNewPiece state { currPiece = (currPiece state) { positionY = 0 } }
 
-validMove :: Direction -> Int -> Int -> Bool
--- TODO: account for differe piece shapes, and already placed pieces
-validMove dir x y = 
+validMove :: Direction -> Int -> Int -> [[Bool]] -> Bool
+validMove dir x y grid =
    case dir of
-      MoveEast  -> x <= 8
+      MoveEast  -> x + pieceWidth <= gridWidth
       MoveWest  -> x >= 0
       MoveSouth -> y >= 0
       None      -> True
+   where
+      pieceWidth = length (head grid)
+      gridWidth = length (head grid)
 
 newPosition :: Direction -> GameState -> (Int, Int)
 newPosition dir state = 
