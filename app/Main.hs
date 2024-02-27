@@ -3,7 +3,7 @@ module Main where
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
 import System.Random
-import Data.List (transpose, findIndex)
+import Data.List (transpose)
 
 -- Board grid is 20x10, each cell has a size of 40
 -- Constants
@@ -44,9 +44,9 @@ allShapes :: [[[Bool]]]
 allShapes = [shapeI, shapeJ, shapeL, shapeO, shapeS, shapeT, shapeZ]
 
 randomPiece :: StdGen -> (Piece, StdGen)
-randomPiece seed = (Piece { shape = newShape, positionX = 4, positionY = 15, pieceDir = None }, gen)
+randomPiece s = (Piece { shape = newShape, positionX = 4, positionY = 15, pieceDir = None }, gen)
    where newShape = allShapes !! rand
-         (rand, gen) = randomR (0,6) seed
+         (rand, gen) = randomR (0,6) s
 
 initialState :: StdGen -> GameState
 initialState s = GameState 
@@ -70,21 +70,22 @@ render :: GameState -> Picture
 --     (x, y) = piecePos state
 render state = 
    if (gameOver state) 
-   then pictures $ [translate (-100) 0 $ scale 0.3 0.3 $ color red $ text "Game Over"]
+   then pictures $
+      [translate (-100) 0 $ scale 0.3 0.3 $ color red $ text "Game Over"] ++ 
+      [translate (-65) (-25) $ scale 0.1 0.1 $ color red $ text "Press ' R ' to Restart"]
    else pictures $
       [renderCell (x, y) red | (y, row) <- zip [0..] (grid state), (x, occupado) <- zip [0..] row, occupado] ++
       [renderCell (x + (positionX (currPiece state)), y + (positionY (currPiece state))) blue | 
       (y, row) <- zip [0..] (shape (currPiece state)), (x, occupado) <- zip [0..] row, occupado]
 
-
 main :: IO ()
 main = do
-   seed <- getStdGen
+   s <- getStdGen
    play
       (InWindow "Tetris" (400, 800) (0, 0))
       white
       60
-      (initialState seed)
+      (initialState s)
       render
       handleInput
       update
@@ -98,6 +99,7 @@ handleInput (EventKey (SpecialKey KeyRight) Down _ _) state = movePiece MoveEast
 handleInput (EventKey (SpecialKey KeyRight) Up _ _) state   = movePiece None state -- state { currPiece = (currPiece state) { pieceDir = None } }
 handleInput (EventKey (SpecialKey KeyUp) Down _ _) state    = rotatePiece state
 handleInput (EventKey (SpecialKey KeySpace) Down _ _) state = dropPiece state
+handleInput (EventKey (Char 'r') Down _ _) state            = if (gameOver state) then initialState (seed state) else state
 handleInput _ state                                         = state
 
 -- TODO: rotate piece does not check that the rotation would cause the piece to move illegally
@@ -117,8 +119,7 @@ withinBounds :: (Int, Int) -> Bool
 withinBounds (x, y) = x < width && x >= 0 && y >= 0
 
 unoccupied :: (Int, Int) -> [[Bool]] -> Bool
-unoccupied (x, y) grid = not $ (grid !! y) !! x
-   where len = length grid
+unoccupied (x, y) g = not $ (g !! y) !! x
 
 validMove :: Direction -> Piece -> GameState -> Bool
 validMove dir piece state = all (\pt -> withinBounds pt && unoccupied pt (grid state)) pieceCells
@@ -151,7 +152,6 @@ occupiedCells :: Piece -> [(Int, Int)]
 occupiedCells piece = [(x + (positionX piece), y + (positionY piece)) | 
                        (y, row) <- zip [0..] (shape piece), 
                        (x, occupado) <- zip [0..] row, occupado]
-   where len = length (shape piece) - 1
 
 generateNewPiece :: GameState -> GameState
 -- set values in grid where currPiece is to True
