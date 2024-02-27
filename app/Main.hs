@@ -184,15 +184,17 @@ replace2D :: Int -> Int -> a -> [[a]] -> [[a]]
 replace2D x y newElem xs =
     take y xs ++ [take x (xs !! y) ++ [newElem] ++ drop (x + 1) (xs !! y)] ++ drop (y + 1) xs
 
--- TODO : clear rows when completed
+clearFullRows :: GameState -> GameState
+clearFullRows state = state { grid = newGrid }
+  where
+    filteredGrid = filter (not . all id) (grid state)
+    newGrid = filteredGrid ++ replicate (height - length filteredGrid) (replicate width False)
+
 
 {- updated to pass the current state (including currPiece and grid) to the validMove function when checking for a valid south move. -}
 update :: Float -> GameState -> GameState
 update dt state =
-   if validMove MoveSouth (currPiece state) state -- (grid state) (positionX (currPiece state)) (positionY (currPiece state) - 1)
+   if validMove MoveSouth (currPiece state) state
    then if (tick state) >= 1.0
-        then movePiece MoveSouth state { tick = 0 }
+        then clearFullRows $ movePiece MoveSouth state { tick = 0 }
         else state { tick = (tick state) + dt }
-   else if (tick state) >= 1.0 then generateNewPiece state { tick = 0 } else state { tick = (tick state) + dt }
-
-
