@@ -39,6 +39,7 @@ shapeO = [[True, True], [True, True]]
 shapeS = [[True, False], [True, True], [False, True]]
 shapeT = [[False, True], [True, True], [False, True]]
 shapeZ = [[False, True], [True, True], [True, False]]
+allShapes :: [[[Bool]]]
 allShapes = [shapeI, shapeJ, shapeL, shapeO, shapeS, shapeT, shapeZ]
 
 randomPiece :: StdGen -> (Piece, StdGen)
