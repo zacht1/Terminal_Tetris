@@ -198,3 +198,4 @@ update dt state =
    then if (tick state) >= 1.0
         then clearFullRows $ movePiece MoveSouth state { tick = 0 }
         else state { tick = (tick state) + dt }
+   else if (tick state) >= 1.0 then generateNewPiece state { tick = 0 } else state { tick = (tick state) + dt }
