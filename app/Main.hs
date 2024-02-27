@@ -102,9 +102,28 @@ handleInput (EventKey (SpecialKey KeySpace) Down _ _) state = dropPiece state
 handleInput (EventKey (Char 'r') Down _ _) state            = if (gameOver state) then initialState (seed state) else state
 handleInput _ state                                         = state
 
--- TODO: rotate piece does not check that the rotation would cause the piece to move illegally
+
 rotatePiece :: GameState -> GameState
-rotatePiece state = state { currPiece = (currPiece state) { shape = (transpose . reverse) (shape (currPiece state)) } }
+rotatePiece state =
+    let oldPiece = currPiece state
+        newShape = transpose . reverse $ shape oldPiece
+        newX = positionX oldPiece
+        newY = positionY oldPiece
+        newPiece = oldPiece { shape = newShape }
+    in if isValidRotation newPiece
+       then state { currPiece = newPiece }
+       else state
+
+-- Check if the rotated piece is within bounds
+isValidRotation :: Piece -> Bool
+isValidRotation piece =
+    all withinBounds (map (\(x, y) -> (x + positionX piece, y + positionY piece)) (getOccupiedCells (shape piece)))
+
+-- Helper function to get the occupied cells of a shape given the Piece.Shape property 
+getOccupiedCells :: [[Bool]] -> [(Int, Int)]
+getOccupiedCells shape =
+    [(x, y) | (row, y) <- zip shape [0..], (True, x) <- zip row [0..]]
+
 
 -- TODO: drop piece does not currently account for pieces already placed
 dropPiece :: GameState -> GameState
