@@ -97,7 +97,7 @@ dropPiece state = generateNewPiece state { currPiece = (currPiece state) { posit
 
 validMove :: Direction -> Piece -> [[Bool]] -> Int -> Int -> Bool
 validMove dir piece grid x y = 
-all (\(newX, newY) -> withinBounds (newX, newY) && not (occupied grid (newX, newY))) $ occupiedCells (movePiece dir piece (x, y))
+   all (\(newX, newY) -> withinBounds (newX, newY) && not (occupied grid (newX, newY))) $ occupiedCells (movePiece dir piece (x, y))
 
 --  takes two integer arguments representing the x and y coordinates to be checked and returns a boolean value
 withinBounds (x, y) = x >= 0 && x < width && y >= 0 && y < height
