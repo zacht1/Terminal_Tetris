@@ -17,7 +17,8 @@ data GameState = GameState
     grid :: [[Bool]],       -- Tettris game grid represented by 2d array of Bools, True if square is occupied, False otherwise
     currPiece :: Piece,
     seed :: StdGen,
-    tick :: Float           -- Time measurement for falling piece
+    tick :: Float,          -- Time measurement for falling piece
+    gameOver :: Bool        -- True if the game has ended
   }
 
 data Piece = Piece 
@@ -53,7 +54,8 @@ initialState s = GameState
     grid = replicate height (replicate width False), 
     currPiece = piece,
     seed = gen,
-    tick = 0
+    tick = 0,
+    gameOver = False
    }
    where (piece, gen) = randomPiece s
 
@@ -66,10 +68,13 @@ render :: GameState -> Picture
 -- render state = translate x y $ color blue $ shapeJ 20
 --   where
 --     (x, y) = piecePos state
-render state = pictures $ 
-   [renderCell (x, y) red | (y, row) <- zip [0..] (grid state), (x, occupado) <- zip [0..] row, occupado] ++
-   [renderCell (x + (positionX (currPiece state)), y + (positionY (currPiece state))) blue | 
-   (y, row) <- zip [0..] (shape (currPiece state)), (x, occupado) <- zip [0..] row, occupado]
+render state = 
+   if (gameOver state) 
+   then pictures $ [translate (-100) 0 $ scale 0.3 0.3 $ color red $ text "Game Over"]
+   else pictures $
+      [renderCell (x, y) red | (y, row) <- zip [0..] (grid state), (x, occupado) <- zip [0..] row, occupado] ++
+      [renderCell (x + (positionX (currPiece state)), y + (positionY (currPiece state))) blue | 
+      (y, row) <- zip [0..] (shape (currPiece state)), (x, occupado) <- zip [0..] row, occupado]
 
 
 main :: IO ()
@@ -102,10 +107,9 @@ rotatePiece state = state { currPiece = (currPiece state) { shape = (transpose .
 -- TODO: drop piece does not currently account for pieces already placed
 dropPiece :: GameState -> GameState
 dropPiece state = generateNewPiece state { currPiece = (currPiece state) { positionY = 0 } }
-   -- where lastY = case findIndex (\x -> x) columnX of
-   --          Just i -> 19 - i
-   --          Nothing -> 0
-   --       columnX = map (\row -> row !! (positionX piece)) (grid state)
+   -- where lastY = findIndex (\_ -> validMove MoveSouth piece state)
+   --       numCells = [py, py-1..0] -- (positionY piece)
+   --       py = (positionY piece) - 1
    --       piece = (currPiece state)
 
 --  takes two integer arguments representing the x and y coordinates to be checked and returns a boolean value
@@ -152,8 +156,9 @@ occupiedCells piece = [(x + (positionX piece), y + (positionY piece)) |
 generateNewPiece :: GameState -> GameState
 -- set values in grid where currPiece is to True
 -- choose next piece to appear and set currPiece to that
-generateNewPiece state = state { grid = newGrid, currPiece = newPiece, seed = newSeed}
+generateNewPiece state = state { grid = newGrid, currPiece = newPiece, seed = newSeed, gameOver = isOver}
    where
+      isOver = any (\x -> x) (newGrid !! 15)
       newGrid = foldl (\b (x, y) -> replace2D x y True b) (grid state) (occupiedCells (currPiece state))
       (newPiece, newSeed) = randomPiece (seed state)
 
