@@ -102,22 +102,20 @@ handleInput (EventKey (SpecialKey KeySpace) Down _ _) state = dropPiece state
 handleInput (EventKey (Char 'r') Down _ _) state            = if (gameOver state) then initialState (seed state) else state
 handleInput _ state                                         = state
 
-
 rotatePiece :: GameState -> GameState
 rotatePiece state =
     let oldPiece = currPiece state
         newShape = transpose . reverse $ shape oldPiece
-        newX = positionX oldPiece
-        newY = positionY oldPiece
         newPiece = oldPiece { shape = newShape }
-    in if isValidRotation newPiece
+    in if isValidRotation newPiece (grid state)
        then state { currPiece = newPiece }
        else state
 
 -- Check if the rotated piece is within bounds
-isValidRotation :: Piece -> Bool
-isValidRotation piece =
-    all withinBounds (map (\(x, y) -> (x + positionX piece, y + positionY piece)) (getOccupiedCells (shape piece)))
+isValidRotation :: Piece -> [[Bool]] -> Bool
+isValidRotation piece grid =
+    all (\x -> withinBounds x && unoccupied x grid) 
+        (map (\(x, y) -> (x + positionX piece, y + positionY piece)) (getOccupiedCells (shape piece)))
 
 -- Helper function to get the occupied cells of a shape given the Piece.Shape property 
 getOccupiedCells :: [[Bool]] -> [(Int, Int)]
